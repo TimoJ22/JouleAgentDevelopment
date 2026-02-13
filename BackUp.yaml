@@ -1,0 +1,52 @@
+
+action_groups:
+
+  - actions:
+    - type: message
+      message:
+        type: text
+        content: "Understood. You can upload an image file containing the necessary details."
+
+    - type: file-upload
+      scripting_type: "spel"
+      content:
+        message: Upload your file here.
+        on_cancel:
+          title: Cancel File Upload
+          message: File upload cancelled
+          button_labels:
+            cancel: "yes"
+            continue: "no"
+      allowed_file_types:
+        - jpeg
+        - png
+        - pdf
+      max_file_size: 2MB
+      max_files_allowed: 1
+      result_variable: result1
+
+    - type: message
+      message:
+        type: text
+        content: "Perfect, file was uploaded and is now being processed. This will take some time, please be patient."
+
+    - type: api-request
+      method: POST
+      headers:
+        Accept: application/json
+        Content-Type: application/octet-stream
+        X-Filename: <? result1.files[0].filename ?>
+        X-Schema-Id: 229e66b4-90f2-4d0a-859d-1964140169ba
+      system_alias: jouleproxydoxgeneric
+      body: <? result1.files[0].file_reference_id ?>
+      timeout: 45
+      result_variable: fileResponse
+
+    - type: message
+      message:
+        type: text
+        content: "DEBUG body: <? fileResponse.body.headerFields.?[name == 'senderId'][0].value  ?>"
+
+
+
+ 

@@ -1,0 +1,209 @@
+action_groups: 
+  - actions: 
+    - type: message 
+      message: 
+        type: text 
+        content: "Understood. You can upload a PDF or image file containing the necessary details. I will extract the relevant information to create a purchase requisition for you." 
+    - type: file-upload 
+      scripting_type: "spel" 
+      content: 
+        message: Upload your file here. 
+        on_cancel: 
+          title: Cancel File Upload 
+          message: File upload cancelled 
+          button_labels: 
+            cancel: "yes" 
+            continue: "no" 
+      allowed_file_types: 
+        - pdf 
+        - jpg 
+      max_file_size: 2MB 
+      max_files_allowed: 1 
+      result_variable: result1 
+    - type: message 
+      message: 
+        type: text 
+        content: "Perfect, file was uploaded and is now being processed. This will take some time, please be patient." 
+    - type: api-request 
+      method: POST 
+      headers: 
+        Content-Type: application/octet-stream 
+        Accept: application/json 
+      system_alias: sfJouleProxySrvDocs 
+      path: /api/uploadDoc 
+      body: <? result1.files[0].file_reference_id ?> 
+      timeout: 45 
+      result_variable: fileResponse 
+  - condition: fileResponse.status_code == 200 
+    actions: 
+      - type: message 
+        message: 
+            type: ui5integrationCard 
+            content: 
+              manifest: 
+                _version: "1.14.0" 
+                sap.app: 
+                  id: "card.explorer.attributes.list.card" 
+                  type: "card" 
+                  applicationVersion: 
+                    version: "1.0.0" 
+                sap.ui: 
+                  technology: "UI5" 
+                  icons: 
+                    icon: "sap-icon://switch-classes" 
+                sap.card: 
+                  type: "List" 
+                  header: 
+                    title: "Purchase Requisition Summary" 
+                    "subtitle": "Supplier: <? fileResponse.body.data.supplier ?>, Total Price: <? fileResponse.body.data.Amount ?> <? fileResponse.body.data.Currency ?>" 
+                  data: 
+                    json: "<? fileResponse.body.data.lineItems ?>" 
+                  content: 
+                    item: 
+                      title: "{item}" 
+                      info: 
+                        value: "{amount} {currency}" 
+                      attributesLayoutType: "OneColumn" 
+                      attributes: 
+                        - value: "Unit Price: {price} {currency}" 
+                        - value: "Quantity: {quantity}" 
+      - type: set-variables 
+        scripting_type: handlebars 
+        variables: 
+          - name: aLineItems
+            value: '{{json fileResponse.body.data.lineItems}}' 
+      - type: user-confirmation 
+        scripting_type: 'spel' 
+        content: 
+          title: 'Confirm Purchase Requisition Details' 
+          subtitle: '' 
+          button_labels: 
+            confirm: 'Confirm' 
+            cancel: 'Cancel' 
+        confirmation_variable: 'my_var' 
+
+  
+
+  
+
+  - condition: my_var == true 
+
+    actions: 
+
+    - type: api-request 
+
+      method: POST 
+
+      system_alias: sfJouleProxySrvDocs 
+
+      path: /odata/v4/joule-proxy/doCreateAribaNonCatalogPR 
+
+      headers: 
+
+          Content-Type: application/json 
+
+      body: | 
+
+          { 
+
+              "Amount": "<? fileResponse.body.data.Amount ?>", 
+
+              "Currency": "<? fileResponse.body.data.Currency ?>", 
+
+              "supplier": "<? fileResponse.body.data.supplier ?>", 
+
+              "validity": "<? fileResponse.body.data.validity ?>", 
+
+              "lineItems": <? aLineItems ?> 
+
+          } 
+
+      result_variable: pr_response 
+
+  
+
+  
+
+  
+
+  - condition: pr_response.status_code == 200 
+
+    actions: 
+
+    - type: set-variables 
+
+      scripting_type: handlebars 
+
+      variables: 
+
+        - name: oPrResponse 
+
+          value: '{{json pr_response.body}}' 
+
+  
+
+  
+
+  - condition: oPrResponse.knownSupplier == true 
+
+    actions: 
+
+      - type: message 
+
+        message: 
+
+          type: illustrated_message 
+
+          content: 
+
+            illustration_name: ReceiveAppreciation 
+
+            title: Purchase Requisition Created 
+
+            subtitle: Your request has been successfully submitted. You will be notified about any updates. 
+
+            buttons: 
+
+              - title: View Request 
+
+                type: web_url 
+
+                value: '<? oPrResponse.sUrl ?>' 
+
+  
+
+  - condition: oPrResponse.knownSupplier == false 
+
+    actions: 
+
+      - type: message 
+
+        message: 
+
+          type: illustrated_message 
+
+          content: 
+
+            illustration_name: NoEntries 
+
+            title: Missing Supplier 
+
+            subtitle: Your purchase requisition cannot be processed without a valid supplier. Your request has been saved as a draft. Please submit a supplier request to proceed. 
+
+            buttons: 
+
+              - title: Submit a Supplier Request 
+
+                type: web_url 
+
+                value: 'https://s3.ariba.com/Sourcing/Main/ad/createSupplier/ariba.sourcing.dashboard.SMMainActionsController?realm=SandboxAtlantic-T' 
+
+              - title: View Request 
+
+                type: web_url 
+
+                value: '<? oPrResponse.sUrl ?>' 
+
+  
+
+ 

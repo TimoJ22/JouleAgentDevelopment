@@ -1,0 +1,14 @@
+schema_version: 3.28.0
+
+metadata:
+  namespace: com.sap.das.demo
+  name: dox_to_sales_order_capability
+  version: 1.0.0
+  display_name: "DOX to Sales Order Capability"
+  description: Uploads a PDF file, extracts sales order data using DOX, and creates a sales order in SAP Sales Cloud V2.
+
+system_aliases:
+  jouleproxydoxgeneric:
+    destination: Joule_DOXSO
+  documentProcessingService:
+    destination: kyma-joule-extensions

@@ -1,0 +1,9 @@
+title: Upload Sales Order PDF to DOX
+description: This function uploads a PDF file to DOX for processing and extracts sales order data.
+
+target:
+  type: function
+  name: upload_pdf_to_dox
+
+conversation_starter:
+  trigger_utterance: Upload file to DOX

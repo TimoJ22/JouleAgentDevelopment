@@ -1,0 +1,33 @@
+  - condition: fileResponse.status_code == 200 
+    actions: 
+      - type: message 
+        message: 
+            type: ui5integrationCard 
+            content: 
+              manifest: 
+                _version: "1.14.0" 
+                sap.app: 
+                  id: "card.explorer.attributes.list.card" 
+                  type: "card" 
+                  applicationVersion: 
+                    version: "1.0.0" 
+                sap.ui: 
+                  technology: "UI5" 
+                  icons: 
+                    icon: "sap-icon://switch-classes" 
+                sap.card: 
+                  type: "List" 
+                  header: 
+                    title: "Sales Order Summary" 
+                    "subtitle": "SenderID: <? fileResponse.body.headerFields.?[name == 'senderId'][0].value ?>" 
+                  data: 
+                    json: "<? fileResponse.body.lineItems ?>" 
+                  content: 
+                    item: 
+                      title: "{item}" 
+                      info: 
+                        value: "{amount} {currency}" 
+                      attributesLayoutType: "OneColumn" 
+                      attributes: 
+                        - value: "Unit Price: {price} {currency}" 
+                        - value: "Quantity: {quantity}" 

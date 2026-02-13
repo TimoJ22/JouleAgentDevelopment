@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sales Order – Initialbestellung</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      color: #000;
+      margin: 40px;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    h2 {
+      font-size: 14px;
+      margin-top: 30px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 4px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .box {
+      width: 48%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table th, table td {
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: left;
+    }
+
+    table th {
+      background-color: #f0f0f0;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .total-table {
+      width: 40%;
+      float: right;
+      margin-top: 20px;
+    }
+
+    .footer {
+      margin-top: 80px;
+      font-size: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Sales Order</h1>
+<strong>ZOR – Replenishment Order</strong><br>
+Bezeichnung: Initialbestellung<br>
+Belegdatum: 30.01.2026<br>
+Währung: EUR
+
+<h2>Verkäufer</h2>
+BSH Deutschland<br>
+Sales Unit: BSH DE Vertrieb (5210)<br>
+Sales Employee: Sarah Peters<br>
+E-Mail: thomas.will+3@sap.com<br>
+Telefon: +49 8933555666
+
+<h2>Geschäftspartner</h2>
+<div class="row">
+  <div class="box">
+    <strong>Kunde (Sold-To)</strong><br>
+    Restaurant HENRIKS<br>
+    Tesdorpfstraße<br>
+    20148 Hamburg<br>
+    Deutschland<br><br>
+    Kundennummer: 2135809<br>
+    Ansprechpartner: Laura Henricks
+  </div>
+
+  <div class="box">
+    <strong>Lieferadresse (Ship-To)</strong><br>
+    Restaurant HENRIKS<br>
+    Tesdorpfstraße<br>
+    20148 Hamburg<br>
+    Deutschland
+  </div>
+</div>
+
+<h2>Positionen</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Pos</th>
+      <th>Artikel-Nr</th>
+      <th>Beschreibung</th>
+      <th class="right">Menge</th>
+      <th class="right">Einzelpreis (€)</th>
+      <th class="right">Gesamt (€)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>10</td>
+      <td>10000143</td>
+      <td>Piacetto Espresso Supremo, 1.000g</td>
+      <td class="right">10 EA</td>
+      <td class="right">22,99</td>
+      <td class="right">229,90</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>10000124</td>
+      <td>EDUSCHO Caffè Crema, 1.000g</td>
+      <td class="right">5 EA</td>
+      <td class="right">19,99</td>
+      <td class="right">99,95</td>
+    </tr>
+    <tr>
+      <td>30</td>
+      <td>10000144</td>
+      <td>Davidoff Café Crème</td>
+      <td class="right">5 EA</td>
+      <td class="right">53,99</td>
+      <td class="right">269,95</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="total-table">
+  <tr>
+    <th>Zwischensumme (Netto)</th>
+    <td class="right">599,80 €</td>
+  </tr>
+  <tr>
+    <th>MwSt</th>
+    <td class="right">0,00 €</td>
+  </tr>
+  <tr>
+    <th>Gesamtbetrag</th>
+    <td class="right"><strong>599,80 €</strong></td>
+  </tr>
+</table>
+
+<div style="clear: both;"></div>
+
+<h2>Lieferinformationen</h2>
+Gewünschtes Lieferdatum: <strong>11.02.2025</strong>
+
+<div class="footer">
+  Dieses Dokument wurde automatisch erstellt.<br>
+  Datenquelle: C4C_V2
+</div>
+
+</body>
+</html>

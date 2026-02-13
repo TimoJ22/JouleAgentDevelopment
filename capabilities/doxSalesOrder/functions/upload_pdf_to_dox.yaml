@@ -1,0 +1,142 @@
+
+action_groups:
+
+  - actions:
+    - type: message
+      message:
+        type: text
+        content: "Understood. You can upload an image file containing the necessary details."
+
+    - type: file-upload
+      scripting_type: "spel"
+      content:
+        message: Upload your file here.
+        on_cancel:
+          title: Cancel File Upload
+          message: File upload cancelled
+          button_labels:
+            cancel: "yes"
+            continue: "no"
+      allowed_file_types:
+        - jpeg
+        - png
+        - pdf
+      max_file_size: 2MB
+      max_files_allowed: 1
+      result_variable: result1
+
+    - type: message
+      message:
+        type: text
+        content: "Perfect, file was uploaded and is now being processed. This will take some time, please be patient."
+
+    - type: api-request
+      method: POST
+      headers:
+        Accept: application/json
+        Content-Type: application/octet-stream
+        X-Filename: <? result1.files[0].filename ?>
+        X-Schema-Id: 229e66b4-90f2-4d0a-859d-1964140169ba
+      system_alias: jouleproxydoxgeneric
+      body: <? result1.files[0].file_reference_id ?>
+      timeout: 45
+      result_variable: fileResponse
+  - condition: fileResponse.status_code == 200 
+    actions: 
+      - type: message 
+        message: 
+            type: ui5integrationCard 
+            content: 
+              manifest: 
+                _version: "1.14.0" 
+                sap.app: 
+                  id: "card.explorer.table.card" 
+                  type: "card" 
+                  applicationVersion: 
+                    version: "1.0.0" 
+                sap.ui: 
+                  technology: "UI5" 
+                  icons: 
+                    icon: "sap-icon://switch-classes" 
+                sap.card: 
+                  type: "Table" 
+                  header: 
+                    title: "Sales Order Summary" 
+                    subtitle: "Customer: <? fileResponse.body.headerFields.senderId ?> - <? fileResponse.body.headerFields.shipToName ?> - Toal Amount: <? fileResponse.body.headerFields.netAmount ?> <? fileResponse.body.headerFields.currencyCode ?>" 
+                  data: 
+                    json: "<? fileResponse.body.lineItems ?>" 
+                  content: 
+                    maxItems: fileResponse.body.lineItems.length()
+                    row:
+                      columns:
+                        - title: "Item Number"
+                          value: "{itemNumber}"
+                          identifier: true
+                        - title: "Product"
+                          value: "{description}"
+                        - title: "Quantity"
+                          value: "{quantity} {unitOfMeasure}"
+                        - title: "Unit Price"
+                          value: "{unitPrice} EUR"
+                        - title: "Total Price"
+                          value: "{netAmount} EUR"
+      - type: user-confirmation 
+        scripting_type: 'spel' 
+        content: 
+          title: 'Confirm Sales Order Details' 
+          subtitle: '' 
+          button_labels: 
+            confirm: 'Confirm' 
+            cancel: 'Cancel' 
+        confirmation_variable: 'confirmSO' 
+
+  - condition: confirmSO == false 
+    actions: 
+    - type: message
+      message:
+        type: text
+        content: "Process cancelled. If you want to upload another file, please start again."
+
+  - condition: confirmSO == true 
+    actions: 
+    - type: message
+      message:
+        type: text
+        content: "Alright, the sales order details have been confirmed. Do you want me to check if there is any cross-selling or up-selling potential based on the sales order details? Otherwise I will proceed to create the sales order in SAP Sales Cloud V2."
+    - type: user-confirmation 
+      scripting_type: 'spel' 
+      content: 
+        title: 'Check for Cross-Selling/Up-Selling Potential?' 
+        subtitle: '' 
+        button_labels: 
+          confirm: 'Yes' 
+          cancel: 'No' 
+      confirmation_variable: 'confirmCrossSellUpSell'
+  - condition: confirmCrossSellUpSell == false
+    actions:
+    - type: message
+      message:
+        type: text
+        content: "Understood, I will proceed to create the sales order in SAP Sales Cloud V2 without checking for cross-selling or up-selling potential."
+    - type: api-request 
+      method: POST 
+      system_alias: documentProcessingService
+      path: /create-sales-order
+      headers:
+        Content-Type: application/json
+      body: |
+        {
+          headerFields: <? fileResponse.body.headerFields ?>, 
+          lineItems: <? fileResponse.body.lineItems ?>
+        }
+      timeout: 45
+      result_variable: createSOResponse
+  - condition: createSOResponse.status_code == 200 
+    actions: 
+      - type: message 
+        message: 
+          type: text 
+          content: "The sales order has been successfully created in SAP Sales Cloud V2. The Sales Order ID is: <? createSOResponse.body.salesOrderId ?>. Is there anything else I can assist you with?"
+
+
+                    

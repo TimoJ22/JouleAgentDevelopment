@@ -1,0 +1,19 @@
+                  footer: 
+                    actionsStrip: 
+                        - type: "Button"
+                          buttonType: "Accept"
+                          text: "Approve"
+                          overflowPriority": "High"
+                          actions:
+                            - type: Custom
+                              parameters:
+                                method: "approve"
+                        - type: "Button"
+                          buttonType: "Reject"
+                          text: "Reject"
+                          overflowPriority": "High"
+                          actions:
+                            - type: Custom
+                              parameters:
+                                method: "reject"
+                  

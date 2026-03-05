@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sales Order – Kitesurfing Template Order</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      color: #000;
+      margin: 40px;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    h2 {
+      font-size: 14px;
+      margin-top: 30px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 4px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .box {
+      width: 48%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table th, table td {
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: left;
+    }
+
+    table th {
+      background-color: #f0f0f0;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .total-table {
+      width: 40%;
+      float: right;
+      margin-top: 20px;
+    }
+
+    .footer {
+      margin-top: 80px;
+      font-size: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Sales Order 194</h1>
+<strong>ZOR2 – Order</strong><br>
+Bezeichnung: Kitesurfing Template Order<br>
+Belegdatum: 25.02.2026<br>
+Währung: EUR
+
+<h2>Verkäufer</h2>
+BSH Deutschland<br>
+Sales Unit: 5200<br>
+Sales Employee: Timo John<br>
+E-Mail: timo.john01@sap.com
+
+<h2>Geschäftspartner</h2>
+<div class="row">
+  <div class="box">
+    <strong>Kunde (Sold-To)</strong><br>
+    Julia Surfers<br>
+    Gamestreet 13<br>
+    10999 Berlin<br>
+    DE<br><br>
+    Kundennummer: 1001087<br>
+    E-Mail: julia.surfer@hybrismarketing.de
+  </div>
+
+  <div class="box">
+    <strong>Lieferadresse (Ship-To)</strong><br>
+    Julia Surfers<br>
+    Gamestreet 13<br>
+    10999 Berlin<br>
+    DE
+  </div>
+</div>
+
+<h2>Positionen</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Pos</th>
+      <th>Artikel-Nr</th>
+      <th>Beschreibung</th>
+      <th class="right">Menge</th>
+      <th class="right">Einzelpreis (€)</th>
+      <th class="right">Gesamt (€)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>10</td>
+      <td>TS-AIR-9-26</td>
+      <td>Tortuga Sports Airblade 9m² (Model 2026)</td>
+      <td class="right">1 EA</td>
+      <td class="right">1190.00</td>
+      <td class="right">1190.00</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>TS-CP-V3</td>
+      <td>Tortuga Sports ControlPro V3</td>
+      <td class="right">1 EA</td>
+      <td class="right">499.00</td>
+      <td class="right">499.00</td>
+    </tr>
+    <tr>
+      <td>30</td>
+      <td>TS-WR-138</td>
+      <td>Tortuga Sports WaveRider 138</td>
+      <td class="right">1 EA</td>
+      <td class="right">549.00</td>
+      <td class="right">549.00</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="total-table">
+  <tr>
+    <th>Zwischensumme (Netto)</th>
+    <td class="right">2238.00 €</td>
+  </tr>
+  <tr>
+    <th>MwSt</th>
+    <td class="right">0.00 €</td>
+  </tr>
+  <tr>
+    <th>Gesamtbetrag</th>
+    <td class="right"><strong>2238.00 €</strong></td>
+  </tr>
+</table>
+
+<div style="clear: both;"></div>
+
+<h2>Lieferinformationen</h2>
+Gewünschtes Lieferdatum: <strong>25.02.2026</strong>
+
+<div class="footer">
+  Dieses Dokument wurde automatisch erstellt.<br>
+  Datenquelle: C4C_V2
+</div>
+
+</body>
+</html>

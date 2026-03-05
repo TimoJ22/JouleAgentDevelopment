@@ -1,0 +1,221 @@
+const axios = require('axios');
+
+module.exports = {
+  main: async function (event, context) {
+    // GET Event Payload
+    //const payload = event.extensions.request.body;
+    const scv2 = 'https://my1000210.de1.demo.crm.cloud.sap/sap/c4c/api/v1/';
+    const authSCV2 = 'Basic STU3NDYxMzpTdGFubGV5SGFubmEyMjA2IQ==';
+
+    // SET CPI Credentials
+    const clientId = 'sb-28b41ce6-3995-4d5e-9531-6848126425b3!b164915|it-rt-cpi-ptf-011-6bmz1yku!b117912';
+    const clientSecret = '71aff317-08d9-4eb9-a036-13f3d05a07d0$l_EKy8iB2VeCBe2W3DAxJ9ha84SbGVztaXkKk1s8gWk=';
+    const tokenEndpoint = 'https://cpi-ptf-011-6bmz1yku.authentication.eu10.hana.ondemand.com/oauth/token';
+
+    /*const samples = {
+      "lineItems": [{
+          "customerMaterialNumber": "TS-AIR-9-26",
+          "description": "Tortuga Sports Airblade 9m² (Model 2026)",
+          "itemNumber": "10",
+          "netAmount": 1190.0,
+          "quantity": 1.0,
+          "senderMaterialNumber": "TS-AIR-9-26",
+          "unitOfMeasure": "EA",
+          "unitPrice": 1190.0
+        },
+        {
+          "customerMaterialNumber": "TS-CP-V3",
+          "description": "Tortuga Sports ControlPro V3",
+          "itemNumber": "20",
+          "netAmount": 499.0,
+          "quantity": 1.0,
+          "senderMaterialNumber": "TS-CP-V3",
+          "unitOfMeasure": "EA",
+          "unitPrice": 499.0
+        },
+        {
+          "customerMaterialNumber": "TS-WR-138",
+          "description": "Tortuga Sports WaveRider 138",
+          "itemNumber": "30",
+          "netAmount": 549.0,
+          "quantity": 1.0,
+          "senderMaterialNumber": "TS-WR-138",
+          "unitOfMeasure": "EA",
+          "unitPrice": 549.0
+        }
+      ]
+    };*/
+
+    // GET Event Payload
+    const payload = event.extensions.request.body;
+
+    // Extract relevant information about line items from the payload
+    const inputLineItems = payload
+      .map(item => `${item.customerMaterialNumber} - ${item.description}`)
+      .join(', ');
+
+    // GET All products in the relevant product group for cross-selling and up-selling
+    const productsInGroup = await getProductsInProductGroup(scv2, authSCV2, 'KITE');
+    const allRelevantProducts = productsInGroup.value
+      .map(item => `${item.displayId} - ${item.name}`)
+      .join(', ');
+
+    // START Processing
+    let token = await getOAuth2Token(clientId, clientSecret, tokenEndpoint);
+
+    // GET AI Recommendations
+    let aiRecommendations = await getAIRecommendations(inputLineItems, allRelevantProducts, token);
+    let parsedRecommendations = JSON.parse(aiRecommendations);
+    let bestFitProduct = parsedRecommendations[0].productId;
+
+    // GET Product Details for best fit product
+    let bestFitProductDetails = await getProductDetails(scv2, authSCV2, bestFitProduct);
+    let priceRate = await getPriceRate(scv2, authSCV2, bestFitProductDetails.value[0].id);
+
+    const responsePayload = {
+      productId: bestFitProduct,
+      description: bestFitProductDetails.value[0].name,
+      explanation: parsedRecommendations[0].explanation,
+      price: priceRate.value[0].rate.content,
+      currency: priceRate.value[0].rate.currencyCode
+    };
+
+    console.log('Response Payload:', responsePayload);
+
+    return responsePayload;
+  }
+}
+
+async function getProductsInProductGroup(scv2, auth, productGroupId) {
+  const fullURL = `${scv2}product-service/products?$filter=productGroupDisplayId eq '${productGroupId}'`;
+
+  let config = {
+    method: 'get',
+    maxBodyLength: Infinity,
+    url: fullURL,
+    headers: {
+      'Authorization': auth
+    }
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching products in product group:', error);
+    throw error;
+  }
+}
+
+async function getOAuth2Token(clientId, clientSecret, tokenEndpoint) {
+  const params = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+  });
+
+  try {
+    const response = await axios.post(tokenEndpoint, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    console.log('START PROCESSING.');
+    console.log('1) OAuth Token successfully fetched.');
+    return response.data.access_token;
+
+  } catch (error) {
+    console.error('Error obtaining OAuth 2.0 token:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
+async function getAIRecommendations(inputLineItems, allRelevantProducts, token) {
+  const fullURL = 'https://cpi-ptf-011-6bmz1yku.it-cpi018-rt.cfapps.eu10-003.hana.ondemand.com/http/create/prompt/chatgpt';
+
+  const prompt = `
+  I have the following items ${inputLineItems} in my relevant product category.
+
+  I have the following products: ${allRelevantProducts}.
+
+  Please check if cross sell / up sell makes sense.
+  Please answer with the best fit only.
+  Please answer in JSON format only. Relevant properties are:
+  - productId
+  - a really short explanation why this is the best fit in regards to the other products.
+  `;
+
+  var combinedJson = {
+    content: prompt
+  };
+
+  const cleanedPrompt = convertJsonToReadableString(combinedJson);
+
+  const res = await axios.get(fullURL, {
+    headers: {
+      'Content-Type': 'application/json',
+
+      Authorization: `Bearer ${token}`,
+    },
+    data: cleanedPrompt
+  });
+  console.log('2) AI Recommendations succesfully fetched.');
+  let result = res.data.choices[0].message.content;
+  return result;
+}
+
+function convertJsonToReadableString(jsonObject) {
+  return JSON.stringify(jsonObject, (key, value) => {
+      // Replace double quotes with single quotes
+      if (typeof value === 'string') {
+        return value.replace(/"/g, "'");
+      }
+      return value;
+    }, 2) // Pretty print the JSON with indentation
+    .replace(/\\n/g, ' ') // Remove newlines (if any)
+    .replace(/\\\\"/g, "'"); // Remove escaped double quotes
+}
+
+async function getProductDetails(scv2, auth, productId) {
+  const fullURL = `${scv2}product-service/products?$filter=displayId eq '${productId}'`;
+
+  let config = {
+    method: 'get',
+    maxBodyLength: Infinity,
+    url: fullURL,
+    headers: {
+      'Authorization': auth
+    }
+  };
+
+  try {
+    const response = await axios(config);
+    console.log('3) Product details for best fit product successfully fetched.');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching product details:', error);
+    throw error;
+  }
+}
+
+async function getPriceRate(scv2, auth, productId) {
+  const fullURL = `${scv2}pricing-masterdata-secondary-service/masterData?$filter=conditionType eq '7PR0' and conditionTable eq 'INT001' and isExternal eq 'false' and Product in '(${productId})'&$top=10&$skip=0&$exclude=externalIDs`;
+
+  let config = {
+    method: 'get',
+    maxBodyLength: Infinity,
+    url: fullURL,
+    headers: {
+      'Authorization': auth
+    }
+  };
+
+  try {
+    const response = await axios(config);
+    console.log('4) Price Rate for best fit product successfully fetched.');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching price rate:', error);
+    throw error;
+  }
+}

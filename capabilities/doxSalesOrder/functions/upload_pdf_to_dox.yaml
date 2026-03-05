@@ -124,11 +124,7 @@ action_groups:
       path: /create-sales-order
       headers:
         Content-Type: application/json
-      body: |
-        {
-          headerFields: <? fileResponse.body.headerFields ?>, 
-          lineItems: <? fileResponse.body.lineItems ?>
-        }
+      body: <? fileResponse.body ?>
       timeout: 45
       result_variable: createSOResponse
   - condition: createSOResponse.status_code == 200 
@@ -136,7 +132,183 @@ action_groups:
       - type: message 
         message: 
           type: text 
-          content: "The sales order has been successfully created in SAP Sales Cloud V2. The Sales Order ID is: <? createSOResponse.body.salesOrderId ?>. Is there anything else I can assist you with?"
-
-
-                    
+          content: "The sales order has been successfully created in SAP Sales Cloud V2: <? createSOResponse.body.salesOrderId ?>. Can I assist you with anything else?"
+  - condition: confirmCrossSellUpSell == true
+    actions:
+    - type: message
+      message:
+        type: text
+        content: "Great, I will check for any cross-selling or up-selling potential based on the sales order details you provided. This will take a moment, please be patient."
+    - type: api-request 
+      method: POST 
+      system_alias: documentProcessingService
+      path: /check-cross-sell-up-sell
+      headers:
+        Content-Type: application/json
+      body: <? fileResponse.body.lineItems ?>
+      timeout: 45
+      result_variable: crossSellUpSellResponse
+  - condition: crossSellUpSellResponse.status_code == 200
+    actions:
+    - type: message
+      message:
+          type: ui5integrationCard 
+          content: 
+            manifest: 
+              _version: "1.83.1" 
+              sap.app: 
+                id: "card.explorer.object.card" 
+                type: "card" 
+                applicationVersion: 
+                  version: "1.0.0" 
+              sap.ui: 
+                technology: "UI5" 
+                icons: 
+                  icon: "sap-icon://switch-classes" 
+              sap.card: 
+                type: "Object" 
+                header: 
+                  title: "AI Upsell / Cross-Sells Potentials" 
+                  subtitle: "<? crossSellUpSellResponse.body.explanation ?>" 
+                content:
+                  data: 
+                    json: "<? crossSellUpSellResponse.body ?>" 
+                  groups:
+                    - alignment: stretch 
+                      items:
+                        - label: "Product-ID"
+                          value: "{productId}"
+                        - label: "Description"
+                          value: "{description}"
+                        - label: "Price"
+                          value: "{price} {currency}"
+    - type: user-confirmation 
+      scripting_type: 'spel' 
+      content: 
+        title: 'Do you want to proceed with creating the sales order in SAP Sales Cloud V2 including the identified cross-selling and up-selling opportunities?' 
+        subtitle: '' 
+        button_labels: 
+          confirm: 'Yes' 
+          cancel: 'No'
+      confirmation_variable: 'confirmSOAfterCrossSellUpSell'
+  - condition: confirmSOAfterCrossSellUpSell == true
+    actions:
+    - type: message
+      message:
+        type: text
+        content: "Alright, let me add the additional cross-selling and up-selling items to the sales order."
+    - type: api-request 
+      method: POST 
+      system_alias: documentProcessingService
+      path: /add-cross-sell-up-sell-items-to-sales-order
+      headers:
+        Content-Type: application/json
+      body: 
+        sourceInput: "<? fileResponse.body ?>"
+        crossSellUpSellItems: "<? crossSellUpSellResponse.body ?>"
+      timeout: 45
+      result_variable: addCrossSellUpSellItemsResponse
+  - condition: addCrossSellUpSellItemsResponse.status_code == 200
+    actions:
+    - type: message
+      message: 
+        type: ui5integrationCard 
+        content: 
+          manifest: 
+            _version: "1.14.0" 
+            sap.app: 
+              id: "card.explorer.table.card" 
+              type: "card" 
+              applicationVersion: 
+                version: "1.0.0" 
+            sap.ui: 
+              technology: "UI5" 
+              icons: 
+                icon: "sap-icon://switch-classes" 
+            sap.card: 
+              type: "Table" 
+              header: 
+                title: "New Sales Order Summary" 
+                subtitle: "Customer: <? addCrossSellUpSellItemsResponse.body.headerFields.senderId ?> - <? addCrossSellUpSellItemsResponse.body.headerFields.shipToName ?> - Toal Amount: <? addCrossSellUpSellItemsResponse.body.headerFields.netAmount ?> <? addCrossSellUpSellItemsResponse.body.headerFields.currencyCode ?>" 
+              data: 
+                json: "<? addCrossSellUpSellItemsResponse.body.lineItems ?>" 
+              content: 
+                maxItems: addCrossSellUpSellItemsResponse.body.lineItems.length()
+                row:
+                  columns:
+                    - title: "Item Number"
+                      value: "{itemNumber}"
+                      identifier: true
+                    - title: "Product"
+                      value: "{description}"
+                    - title: "Quantity"
+                      value: "{quantity} {unitOfMeasure}"
+                    - title: "Unit Price"
+                      value: "{unitPrice} EUR"
+                    - title: "Total Price"
+                      value: "{netAmount} EUR"
+    - type: user-confirmation 
+      scripting_type: 'spel' 
+      content: 
+        title: 'Confirm New Sales Order Details' 
+        subtitle: '' 
+        button_labels: 
+          confirm: 'Confirm' 
+          cancel: 'Cancel' 
+      confirmation_variable: 'confirmNewSO'
+  - condition: confirmNewSO == false
+    actions:
+    - type: message
+      message:
+        type: text
+        content: "Process cancelled. If you want to upload another file, please start again."
+  - condition: confirmNewSO == true
+    actions:
+    - type: message
+      message:
+        type: text
+        content: "The sales order will be created in SAP Sales Cloud V2 with the identified cross-selling and up-selling opportunities. This will take a moment, please be patient."
+    - type: api-request 
+      method: POST 
+      system_alias: documentProcessingService
+      path: /create-sales-order
+      headers:
+        Content-Type: application/json
+      body: "<? addCrossSellUpSellItemsResponse.body ?>"
+      timeout: 45
+      result_variable: createSOWithCrossSellUpSellResponse
+  - condition: createSOWithCrossSellUpSellResponse.status_code == 200
+    actions:
+    - type: message
+      message:
+        type: text
+        content: "The sales order has been successfully created in SAP Sales Cloud V2 including the identified cross-selling and up-selling opportunities: <? createSOWithCrossSellUpSellResponse.body.salesOrderId ?>. Can I assist you with anything else?"
+    - type: set-variables
+      variables:
+        - name: salesCloudURL
+          value: "https://my1000210.de1.demo.crm.cloud.sap/go/detail/sales-order-ui?displayId=<? createSOWithCrossSellUpSellResponse.body.salesOrderId ?>"
+    - type: message
+      message: 
+        type: ui5integrationCard 
+        content: 
+          manifest: 
+            _version: "1.83.1" 
+            sap.app: 
+              id: "adaptivecard.embedded" 
+              type: "card" 
+              applicationVersion: 
+                version: "1.0.0" 
+            sap.ui: 
+              technology: "UI5" 
+              icons: 
+                icon: "sap-icon://switch-classes" 
+            sap.card: 
+              type: "AdaptiveCard" 
+              header: 
+                title: "View Sales Order in SAP Sales Cloud V2" 
+                subtitle: "Sales Order ID: <? createSOWithCrossSellUpSellResponse.body.salesOrderId ?>"
+              content:
+                actions:
+                  - type: "Action.OpenUrl"
+                    title: "Open Sales Order"
+                    url: "<? salesCloudURL ?>"

@@ -8,7 +8,6 @@ module.exports = {
 
         // GET Event Payload
         const payload = event.extensions.request.body;
-        console.log(payload);
 
         const headerFields = payload.headerFields;
         const lineItems = payload.lineItems;
@@ -23,24 +22,27 @@ module.exports = {
         }));
 
         // CREATE Sales Order
-        const salesOrderID = await createCase(scv2, authSCV2, headerFields, itemPayload);
+        const salesOrderID = await createSalesOrder(scv2, authSCV2, headerFields, itemPayload);
 
-        const output = JSON.stringify({
-            salesOrderID: salesOrderID
-        });
+        const responsePayload = {
+                salesOrderId: salesOrderID
+        };
 
-        return output;
+        return responsePayload;
+
     }
 }
 
-async function createCase(scv2, auth, headerFields, itemPayload) {
-    const fullURL = scv2 + 'case-service/cases';
+async function createSalesOrder(scv2, auth, headerFields, itemPayload) {
+    const fullURL = scv2 + 'sales-order-service/salesOrders';
 
     let data = JSON.stringify({
         "documentType": "ZOR",
+        "name": "Automatic Joule Sales Order",
         "account": {
             "displayId": headerFields.senderId
         },
+        "currency": "EUR",
         "items": itemPayload
     });
 
@@ -60,7 +62,7 @@ async function createCase(scv2, auth, headerFields, itemPayload) {
         console.log('Sales Order created successfully:', response.data.value.displayId);
         return response.data.value.displayId; // Return the sales order ID
     } catch (error) {
-        console.error('Error creating case:', error);
+        console.error('Error creating sales order:', error);
         throw error; // Propagate the error to be handled by the caller
     }
 }
